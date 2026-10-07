@@ -17,6 +17,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-34"
+          sdkmanager "build-tools;34.0.0"
+          yes | sdkmanager --licenses
+
       - name: Extract game project
         shell: bash
         run: |
@@ -31,24 +50,6 @@ jobs:
 
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
           echo "Godot project found at: $PROJECT_DIR"
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager \
-            "platform-tools" \
-            "build-tools;34.0.0" \
-            "platforms;android-34" \
-            "cmdline-tools;latest"
 
       - name: Set up Godot 4.3
         uses: chickensoft-games/setup-godot@v2
@@ -92,8 +93,6 @@ jobs:
           gradle_build/android_source_template=""
           gradle_build/compress_native_libraries=false
           gradle_build/export_format=0
-          gradle_build/min_sdk=""
-          gradle_build/target_sdk=""
 
           architectures/armeabi-v7a=false
           architectures/arm64-v8a=true
@@ -105,20 +104,6 @@ jobs:
 
           package/unique_name="com.modyk.mansyastrike"
           package/name="MANSY A STRIKE"
-          package/signed=true
-          package/app_category=2
-          package/retain_data_on_uninstall=false
-          package/exclude_from_recents=false
-          package/show_in_android_tv=false
-          package/show_in_app_library=true
-          package/show_as_launcher_app=false
-
-          launcher_icons/main_192x192="res://assets/mansy_logo.png"
-          launcher_icons/adaptive_foreground_432x432=""
-          launcher_icons/adaptive_background_432x432=""
-          launcher_icons/adaptive_monochrome_432x432=""
-
-          graphics/opengl_debug=false
 
           screen/immersive_mode=true
           screen/support_small=true
@@ -127,17 +112,13 @@ jobs:
           screen/support_xlarge=true
 
           user_data_backup/allow=false
-
-          command_line/extra_args=""
-          apk_expansion/enable=false
-          apk_expansion/SALT=""
           EOF
 
       - name: Import Godot project
         shell: bash
         run: |
           cd "$PROJECT_DIR"
-          godot --headless --editor --import --quit || true
+          godot --headless --editor --import --quit
 
       - name: Build Android APK
         shell: bash
