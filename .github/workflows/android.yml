@@ -2,6 +2,9 @@ name: Build MANSY A STRIKE APK
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build-android:
@@ -29,12 +32,15 @@ jobs:
       - name: Extract game project
         shell: bash
         run: |
+          set -e
+
           unzip -o MANSY_A_STRIKE_FINAL_ALPHA_1.0.0.zip -d extracted
 
           PROJECT_DIR=$(find extracted -name project.godot -type f -printf '%h\n' | head -n 1)
 
           if [ -z "$PROJECT_DIR" ]; then
-            echo "ERROR: project.godot not found"
+            echo "ERROR: project.godot was not found"
+            find extracted -maxdepth 3 -type f | head -100
             exit 1
           fi
 
@@ -51,6 +57,7 @@ jobs:
       - name: Create Android export preset
         shell: bash
         run: |
+          set -e
           cd "$PROJECT_DIR"
 
           cat > export_presets.cfg <<'EOF'
@@ -105,16 +112,26 @@ jobs:
           user_data_backup/allow=false
           EOF
 
+          echo "Android export preset created."
+
       - name: Import Godot project
         shell: bash
         run: |
+          set -e
           cd "$PROJECT_DIR"
-          godot --headless --editor --import --quit
+
+          godot \
+            --headless \
+            --editor \
+            --import \
+            --quit
 
       - name: Build Android APK
         shell: bash
         run: |
+          set -e
           cd "$PROJECT_DIR"
+
           mkdir -p build
 
           godot \
@@ -126,8 +143,17 @@ jobs:
       - name: Check APK
         shell: bash
         run: |
+          set -e
+
+          echo "Checking APK..."
+
           ls -lh "$PROJECT_DIR/build/"
+
           test -f "$PROJECT_DIR/build/MANSY_A_STRIKE.apk"
+
+          echo "APK BUILD SUCCESSFUL"
+          echo "APK size:"
+          du -h "$PROJECT_DIR/build/MANSY_A_STRIKE.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
